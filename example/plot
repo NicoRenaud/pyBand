@@ -1,0 +1,58 @@
+set term pngcairo dashed enhanced font "Times,20" size 700,700
+
+set style fill solid 1.0 noborder
+set clip two
+
+
+#set pm3d map
+set hidden3d front
+set tics out
+set xtics nomirror
+set ytics nomirror
+set key notitle
+set key spacing 1.2 horizontal out
+set key width 1.5
+
+
+set palette defined ( 2 '#000090',\
+	 3 '#000fff',\
+	4 '#0090ff',\
+	5 '#0fffee',\
+	6 '#90ff70',\
+	7 '#ffee00',\
+	8 '#ff7000',\
+	9 '#ee0000',\
+	10 '#7f0000')
+
+
+
+
+#set xrange [1:1.5]
+set yrange [-5:10]
+
+set output 'band_structure.png'
+set style fill transparent solid  1 noborder
+set xlabel "K" font "Times,35"
+set ylabel "E (eV)" font "Times,35"
+
+
+set arrow from 0,graph(0,0)  to 0,graph(1,1)  nohead
+
+ct = 0.353
+#set arrow from ct,graph(0,0)  to ct,graph(1,1)  nohead
+
+ct = 1.219
+#set arrow from ct,graph(0,0)  to ct,graph(1,1)  nohead
+
+ct = 1.926
+#set arrow from ct,graph(0,0)  to ct,graph(1,1)  nohead
+
+ct = 2.280
+#set arrow from ct,graph(0,0)  to ct,graph(1,1)  nohead
+
+ct = 0
+set arrow from ct,graph(0,0)  to ct,graph(1,1)  nohead
+
+plot 'band_limit.dat' using 1:2 with lines lt 1 lw 2 lc rgb "#000000" noti ,\
+     'fermi_level.dat' using 1:2 with lines lt 3 lw 2 lc rgb "#000000" noti ,\
+      'band_structure.dat' using 1:2 with lines lt 1 lw 2 lc rgb "#000000" noti

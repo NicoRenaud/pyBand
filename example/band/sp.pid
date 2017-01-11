@@ -1,0 +1,27 @@
+# status: new
+# pid: 
+# hostname: 
+# username: 
+# jobscript: 
+# prolog: 
+# epilog: 
+# jobdir: $HOME/jobs-gui
+# fakejob: 0
+# comparewithtarget: not found
+# error: 0
+# warning: 0
+# runcmd: "$job"
+# batch: 
+# options: 
+# killcmd: killall $pid
+# jobstatuscmd: ps -p $pid | grep $pid
+# sysstatuscmd: uptime
+# pidfile: no
+# label: 
+# logfile: logfile
+# syncjobs: yes
+# synctime: 
+# backup: 
+# whenready: 
+# scmjobid: 1461152872543-67265
+# paused: 0
