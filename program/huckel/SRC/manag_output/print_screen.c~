@@ -1,0 +1,137 @@
+
+#include "../defMacro.h"
+
+
+
+#include "../defMacro.h"
+
+////////////////////////////////////
+// Print the header of the program //
+////////////////////////////////////
+
+
+
+void print_header(SYS_XYZ sys) {
+ 
+  printf("\n====  ===============================  ====\n");    
+  printf("====                                   ====\n");   
+  printf("====  	        Husky.1	               ====\n"); 
+  printf("====                                   ====\n");   
+  printf("====  ===============================  ====\n\n");
+  
+  printf(" == Job Type required		\t: %s\n",sys.jobtype);
+  printf(" == Coordinates of the molecule    \t: %s\n",sys.pos);
+  
+  if(!strcmp(sys.jobtype,"junction"))
+  printf(" == Coordinate of the cluster	\t: %s\n",sys.cluster);
+  
+  if(!strcmp(sys.jobtype,"stm") || !strcmp(sys.jobtype,"stm_map") )
+  {
+  printf(" == Coordinate of the surface	\t: %s\n",sys.surface);
+  printf(" == Coordinate of the tip   	\t: %s\n",sys.tip);
+  }
+  
+  if(!strcmp(sys.jobtype,"junction") || !strcmp(sys.jobtype,"stm"))
+  {
+  printf(" == Parameter for the T(E) calculation \n");
+  printf(" \t Minimal incident energy   \t: %2.3lf\n",sys.min_nrj);
+  printf(" \t Maximal incident energy   \t: %2.3lf\n",sys.max_nrj);
+  printf(" \t Number of incident energy \t: %d\n",sys.nb_nrj);
+  printf(" \t Fermi Energy	        \t: %2.3lf\n",sys.Ef);
+  }
+  
+  if(!strcmp(sys.jobtype,"stm_map"))
+  {
+  printf(" == Parameter for the map calculation \n");
+  printf(" \t stm mode 			\t: %s at %2.3lf\n",sys.stm_mode,sys.stm_const);
+  printf(" \t size of the map (Angstrom)	\t: %2.3lf x %2.3lf\n",sys.stm_size_map[0],sys.stm_size_map[1]);  
+  printf(" \t number of point per direction	\t: X = %d\tY = %d\n",sys.stm_resol_map[0],sys.stm_resol_map[1]);
+  printf(" \t Fermi Energy			\t: %2.3lf\n",sys.Ef);
+  printf(" \t Applied bias voltage		\t: %2.3lf\n",sys.stm_bias);
+  printf(" \t resolution for T(E)		\t: %d\n",sys.nb_nrj);
+  }
+  printf(" \n====  ===============================  ====\n\n");
+  
+}
+
+
+
+
+
+
+
+
+
+////////////////////////////////////
+//      Print a Matrix            //
+////////////////////////////////////
+
+void print_mat(double * MAT,int n1,int n2, char *name){
+      
+     int i,j,k=0;
+     printf("\n %s= [\n",name);
+     for(i=0;i<n1;i++)
+     {
+//                       printf("\t\t");
+                      for(j=0;j<n2;j++)
+                      {
+                                       printf("%1.3f ",MAT[k]);
+					k++;
+                      }
+                      printf("\n");
+      }  
+      printf("\t     ];\n"); 
+}
+
+////////////////////////////////////
+//      Print a ComplexMatrix       //
+////////////////////////////////////
+void print_mat_C(complex double  *MAT, int n1, int n2, char *name)
+{
+      
+     int i,j,k=0;
+     printf("\n %s= [\n",name);
+     for(i=0;i<n1;i++)
+     {
+                      printf("\t");
+                      for(j=0;j<n2;j++)
+                      {
+                                       printf("%1.6f+%%i*%1.6f ",crealf(MAT[k]),cimagf(MAT[k]));
+					k++;
+                      }
+                      printf("\n");
+      }  
+      printf("\t ];\n"); 
+}
+
+
+////////////////////////////////////
+//      Print a Vector            //
+///////////////////////////////////
+void print_vect(double  *VECT, int n,char *name){
+     int i;
+     printf("\n %s= [ ",name);
+     for(i=0;i<n;i++)
+                     printf("%2.5g ",VECT[i]);
+     printf(" ]\n");
+}
+
+
+void print_vect_real(int  *VECT, int n,char *name){
+     int i;
+     printf("\n %s= [ ",name);
+     for(i=0;i<n;i++)
+                     printf("%d ",VECT[i]);
+     printf(" ]\n");
+}
+
+////////////////////////////////////
+//      Print a Vector            //
+///////////////////////////////////
+void print_vect_C(complex double  *VECT, int n,char *name){
+     int i;
+     printf("\n %s= [ ",name);
+     for(i=0;i<n;i++)
+                     printf("%g +i %g ",creal(VECT[i]),cimag(VECT[i]));
+     printf(" ]\n");
+}

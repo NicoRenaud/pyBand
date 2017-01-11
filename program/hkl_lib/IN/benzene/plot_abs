@@ -1,0 +1,33 @@
+set term pngcairo dashed enhanced font "Times,25" size 700,700
+
+set style fill solid 1.0 noborder
+set clip two
+
+#set xrange [2:8]
+#set yrange [0:1]
+
+
+
+set tics out
+set xtics nomirror
+set ytics nomirror
+set key notitle 
+set key spacing 1.2 horizontal inside
+set key width 1.5
+
+
+
+
+
+set output 'abs.png'
+set style fill transparent solid  0.5 noborder
+set xlabel " E (nm)" font "Times,35"
+set ylabel "Abs." font "Times,35"
+plot  'absSpec.dat' using 2:3 with lines ls 1 lw 3 lc rgb "#000000" noti
+
+
+
+
+
+
+

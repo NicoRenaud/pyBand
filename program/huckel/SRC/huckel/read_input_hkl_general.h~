@@ -1,0 +1,17 @@
+//////////////////////
+// header general 
+////////////////////////
+
+#ifndef read_input_hkl_gen_h
+#define read_input_hkl_gen_h
+
+void read_molecule_input_file(char *file_name, atom **MOL, int *no_atoms, int **ind_mol, int *no_atm_mol,
+			    int **ind_elec_1, int *no_atm_elec1, int **ind_elec_2, int *no_atm_elec2 );
+
+void compute_huckel_hamiltonian_general(double **Hout, double **Sout, int *sizeH, int *size_sys, atom **MOL,
+				int **IND_ATOM_MOL, int *NO_ATOM_MOL, int **IND_ATOM_ELEC, int *NO_ATOM_ELEC,
+				int **ORB_MOL, int *NORB_MOL, int **ORB_ELEC1, int *NORB_ELEC1,int **ORB_ELEC2, int *NORB_ELEC2,
+				char *file_name,char *out_path,char *orb_elec);
+
+void extract_atom_mol(atom *mol_only,  int *ind_atom_mol, int no_atom_mol, atom *MOL);
+#endif

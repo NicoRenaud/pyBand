@@ -1,0 +1,491 @@
+#include "../defMacro.h"
+
+
+/////////////////////////////////////////////////////////////
+//	read the input file and calls
+//	and generate the data for a junction
+/////////////////////////////////////////////////////////////
+void read_data(SYS_XYZ* sys_xyz, char *file_name)
+{
+   int i;  
+   int nInd;
+   int INT,INT2;
+   double  FLT,FLT2;
+   double  K;
+   char str [80];
+   char str2[100];
+   char str_out[100];
+   char str_cmt[3];
+   char str_job[25];
+   char trash[51];
+   char str_index[50];
+   char *pch;
+   FILE *f;
+
+   f = fopen(file_name,"r");
+   if (!f) {
+      printf("couldn't read %s\n", file_name);
+      exit(1);
+   }
+
+   ///////////////////////////
+   // default value
+   ///////////////////////////
+   
+   
+//    strcpy(sys_xyz->jobtype,"none");
+//    strcpy(sys_xyz->job_option,"none");
+   
+   // address of the different part of the molecule
+   strcpy(sys_xyz->pos,"none");
+   strcpy(sys_xyz->cluster,"none");
+   strcpy(sys_xyz->surface,"none");
+   strcpy(sys_xyz->tip,"none");
+   
+   
+   // distance 
+   sys_xyz->dist_mol_surf = 2;
+   sys_xyz->dist_mol_tip = 8;
+   
+   // defaut value of the tip pos
+   sys_xyz->tip_pos[0] = -1;
+   sys_xyz->nb_tip_pos = 1;
+   
+   
+   // default resolution of the stm map
+   sys_xyz->stm_resol_map[0] = 25;
+   sys_xyz->stm_resol_map[1] = 25;
+   
+   // default value of the map 
+   sys_xyz->stm_size_map[0] = 0;
+   sys_xyz->stm_size_map[1] = 0;
+   
+   
+   // default value for TE : resolution
+   sys_xyz->nb_nrj = 100;
+   
+   // default value for TE : Fermi energy
+   sys_xyz->Ef = -10.5;
+   
+   // use which orbitals for TE all s_only, p_only px_only ...
+   strcpy(sys_xyz->orb_contact,"all");
+   
+   // type of electronic structure
+   strcpy(sys_xyz->elec_struct,"ehmo");
+   
+   // use all the orbital in the electrode all, s_only ....
+   strcpy(sys_xyz->orb_elec,"all");
+
+   // use overlap for the TE
+   strcpy(sys_xyz->use_overlap,"yes");
+   
+   // export option
+   strcpy(sys_xyz->export_current,"yes");
+   strcpy(sys_xyz->export_TE,"yes");
+   strcpy(sys_xyz->export_MO,"yes");
+   
+   
+
+
+   
+   //////////////////////////////////////////
+   // for all lines of the input file
+   //////////////////////////////////////////
+   while (!feof(f))
+   {
+        ///////////////////////
+	// read the string
+	///////////////////////
+	fscanf(f,"%s",str);
+	
+	////////////////////////
+	// if it's a comment
+	////////////////////////
+	strncpy(str_cmt,str,2);
+	str_cmt[2] = '\0';
+	if (!strcmp(str_cmt,"//"))
+	  fgets(str2,100,f);
+	
+	///////////////////////////
+	// if it's not a comment
+	///////////////////////////
+	else
+	{
+	  
+	  //////////////////////////////////
+	  // determine what is the input
+	  /////////////////////////////////
+
+
+	   ////////////////////////
+	   // type de geometry
+	   ///////////////////////    
+	   if( !strcmp(str,"geometry") || !strcmp(str,"GEOMETRY")   || 
+		!strcmp(str,"conformation")  || !strcmp(str,"CONFORMATION")  ||
+	        !strcmp(str,"jobtype") || !strcmp(str,"JOBTYPE")	)
+	    {  
+		  fscanf(f,"%s",str_job);		  
+		  strcpy(sys_xyz->jobtype,str_job);
+	    }
+	    
+	    else if( !strcmp(str,"job_option") || !strcmp(str,"JOB_OPTION")  	)
+	    {  
+		  fscanf(f,"%s",str_job);		  
+		  strcpy(sys_xyz->job_option,str_job);
+	    }
+	  
+
+///////////////////////////////////////////////////////////////////////////
+//			MOLECULE
+///////////////////////////////////////////////////////////////////////////
+
+	    ////////////////////////
+	    // position of the atoms
+	    ///////////////////////    
+	     else if( !strcmp(str,"position") || !strcmp(str,"POSITIONS")   || 
+		!strcmp(str,"pos")  || !strcmp(str,"POS")  ||
+	        !strcmp(str,"molecule") || !strcmp(str,"MOLECULE")	)
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->pos,str_out);
+	    }
+	    
+	    
+	    ////////////////////////
+	    // method to comoute H
+	    ///////////////////////    
+	    else if( !strcmp(str,"elec_struct") || !strcmp(str,"ELEC_STRUCT")  )
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->elec_struct,str_out);
+	    }
+	    
+	     ////////////////////////
+	    // use S or not
+	    ///////////////////////    
+	    else if( !strcmp(str,"use_overlap") || !strcmp(str,"USE_OVERLAP")  )
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->use_overlap,str_out);
+	    }
+	    
+	     ////////////////////////////////////////////////
+	     // index of contact atoms (JUNCTION GEOMETRY)
+	     ////////////////////////////////////////////////    
+	    else if( !strcmp(str,"index_contact") || !strcmp(str,"INDEX_CONTACT")   || 
+		!strcmp(str,"ind_cont")  || !strcmp(str,"IND_CONT")  )
+	    {  
+		  fscanf(f,"%d %d",&INT,&INT2);		  
+		  sys_xyz->index_contact[0] = INT-1;
+		  sys_xyz->index_contact[1] = INT2-1;
+	    }
+	    
+	    
+	     ////////////////////////////////////////////////
+	     // index of atoms defining the X  axis (STM GEOMETRY)
+	     ////////////////////////////////////////////////    
+	    else if( !strcmp(str,"ind_x_axis") || !strcmp(str,"IND_X_AXIS")     )
+	    {  
+		  fscanf(f,"%d %d",&INT,&INT2);		  
+		  sys_xyz->mol_x_axis[0] = INT-1;
+		  sys_xyz->mol_x_axis[1] = INT2-1;
+	    }
+	    
+	    
+	     ////////////////////////////////////////////////
+	     // index of atoms defining the  Y axis (STM GEOMETRY)
+	     ////////////////////////////////////////////////    
+	    else if( !strcmp(str,"ind_y_axis") || !strcmp(str,"IND_Y_AXIS")     )
+	    {  
+		  fscanf(f,"%d %d",&INT,&INT2);		  
+		  sys_xyz->mol_y_axis[0] = INT-1;
+		  sys_xyz->mol_y_axis[1] = INT2-1;
+	    }
+	    
+	    /////////////////////////////////////////////////////////////////
+	    // orbital to use in the computation (DEBUGGING OPTION MAINLY)
+	    /////////////////////////////////////////////////////////////////    
+	    else if( !strcmp(str,"orb_contact") || !strcmp(str,"ORB_CONTACT")   || 
+		!strcmp(str,"orb_cont")  || !strcmp(str,"ORB_CONT")  )
+	    {  
+		  fscanf(f,"%s",str2);		  
+		  strcpy(sys_xyz->orb_contact,str2);
+	    }
+	    
+
+	    
+	    
+///////////////////////////////////////////////////////////////////////////
+//			CLUSTER for a JUNCTION geometry
+///////////////////////////////////////////////////////////////////////////	    
+	    
+	    ////////////////////////
+	    // cluster position
+	    ///////////////////////    
+	     else if( !strcmp(str,"cluster") || !strcmp(str,"CLUSTER")   || 
+		!strcmp(str,"clstr")  ||  !strcmp(str,"CLSTR")  ||
+	        !strcmp(str,"clust_elec") || !strcmp(str,"CLUST_ELEC")	)
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->cluster,str_out);
+	    }
+	    
+
+	    
+	    
+///////////////////////////////////////////////////////////////////////////
+//		SURFACE for a STM geometry
+///////////////////////////////////////////////////////////////////////////	    
+	    
+	    ////////////////////////
+	    // surface position
+	    ///////////////////////    
+	     else if( !strcmp(str,"surface") || !strcmp(str,"SURFACE")   || 
+		!strcmp(str,"surf")  ||  !strcmp(str,"SURF")  )
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->surface,str_out);
+	    }
+	    
+	    ////////////////////////////////
+	    // surface/molecule distance
+	    ////////////////////////////////    
+	     else if( !strcmp(str,"dist_mol_surf") || !strcmp(str,"DIST_MOL_SURF") )
+	    {  
+		  fscanf(f,"%lf",&FLT);		  
+		  sys_xyz->dist_mol_surf = FLT;
+	    }
+	    
+///////////////////////////////////////////////////////////////////////////
+//		TIP for a STM geometry
+///////////////////////////////////////////////////////////////////////////	    
+	    
+	    ////////////////////////
+	    // tip position
+	    ///////////////////////    
+	     else if( !strcmp(str,"tip") || !strcmp(str,"TIP")  )
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->tip,str_out);
+	    }
+	    
+	    ////////////////////////////////
+	    // molecule/tip distance
+	    ////////////////////////////////    
+	    else if( !strcmp(str,"dist_mol_tip") || !strcmp(str,"DIST_MOL_TIP") )
+	    {  
+		  fscanf(f,"%lf",&FLT);		  
+		  sys_xyz->dist_mol_tip = FLT;
+	    }
+	    
+	    //////////////////////////////////////////////
+	    // X/Y Position of the tip above the molecule
+	    /////////////////////////////////////////////
+	    else if( !strcmp(str,"tip_pos") || !strcmp(str,"TIP_POS") ||
+		     !strcmp(str,"position_tip") || !strcmp(str,"POSITION_TIP")
+	    )
+	    {  
+	      
+	         fgets(trash,50,f);	
+	       
+		  // cptr
+		  nInd = 0;
+			  
+		  // decoupe trash en  segment
+		  strcpy(str_index,trash);
+		  pch = strtok (str_index," ,");
+			  
+		  // keep cutting
+		  while (pch != NULL)
+		  {
+
+		    
+		    // choose which index
+		    sys_xyz->tip_pos[nInd] = (int) atoi(pch) - 1;
+
+		    // recut the string
+		    pch = strtok (NULL, " ");
+				    
+		    // increment index
+		    nInd ++;
+		  
+		  }
+		  
+		  // store the resutls
+		  sys_xyz->nb_tip_pos = nInd;
+		  
+	    }	    
+	    
+	    
+	    
+	    
+///////////////////////////////////////////////////////////////////////////
+//		ADVANCED OPTIONS FOR THE ELECTRODES
+///////////////////////////////////////////////////////////////////////////
+
+	    /////////////////////////////////////////////////////
+	    // orbitale electrode (USE ALL THE ORBITAL OR NOT)
+	    /////////////////////////////////////////////////////    
+	     else if( !strcmp(str,"orb_elec") || !strcmp(str,"ORB_ELEC")   || 
+		!strcmp(str,"orb_cluster")  ||  !strcmp(str,"ORB_CLUSTER")  ||
+	        !strcmp(str,"clust_orb") || !strcmp(str,"CLUST_ORB")	)
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->orb_elec,str_out);
+	    }
+	    
+	    
+///////////////////////////////////////////////////////////////////////////
+//			COMPUTE TE one point
+///////////////////////////////////////////////////////////////////////////	    
+	    	    
+	    ////////////////////////
+	    // min energy
+	    ///////////////////////    
+	     else if( !strcmp(str,"min_energy") || !strcmp(str,"MIN_ENERGY")   || 
+		!strcmp(str,"energy_min")  ||  !strcmp(str,"ENERGY_MIN")  ||
+	        !strcmp(str,"emin") || !strcmp(str,"EMIN")	)
+	    {  
+		  fscanf(f,"%lf",&FLT);		  
+		  sys_xyz->min_nrj=FLT;
+	    }
+	    
+	    ////////////////////////
+	    // max energy
+	    ///////////////////////    
+	     else if( !strcmp(str,"max_energy") || !strcmp(str,"MAX_ENERGY")   || 
+		!strcmp(str,"energy_max")  ||  !strcmp(str,"ENERGY_MAX")  ||
+	        !strcmp(str,"emax") || !strcmp(str,"EMAX")	)
+	    {  
+		  fscanf(f,"%lf",&FLT);		  
+		  sys_xyz->max_nrj=FLT;
+	    }	
+	    
+	    ////////////////////////
+	    // nb energy
+	    ///////////////////////    
+	     else if( !strcmp(str,"nb_energy") || !strcmp(str,"NB_ENERGY")   || 
+		!strcmp(str,"energy_nb")  ||  !strcmp(str,"ENERGY_NB")  ||
+	        !strcmp(str,"nb_e") || !strcmp(str,"NB_E")	)
+	    {  
+		  fscanf(f,"%d",&INT);		  
+		  sys_xyz->nb_nrj=INT;
+	    }
+	    
+	    ////////////////////////
+	    //    Fermi energy
+	    ///////////////////////    
+	     else if( !strcmp(str,"fermi_energy") || !strcmp(str,"FERMI_ENERGY")   || 
+		!strcmp(str,"energy_fermi")  ||  !strcmp(str,"ENERGY_FERMI")  ||
+	        !strcmp(str,"Ef") || !strcmp(str,"EF")	)
+	    {  
+		  fscanf(f,"%lf",&FLT);		  
+		  sys_xyz->Ef=FLT;
+	    }
+	    
+	    
+///////////////////////////////////////////////////////////////////////////
+//			COMPUTE STM MAP
+///////////////////////////////////////////////////////////////////////////
+
+	    
+	    ////////////////////////
+	    // STM MODE
+	    // constraint heigh or current
+	    ////////////////////////////////    
+	     else if( !strcmp(str,"stm_mode") || !strcmp(str,"STM_MODE")  )
+	    {  
+		  fscanf(f,"%s %lf",str_out,&FLT);		  
+		  strcpy(sys_xyz->stm_mode,str_out);
+		  sys_xyz->stm_const=FLT;
+		  
+		  if(!strcmp(str_out,"constant_height"))
+		    sys_xyz->dist_mol_tip = FLT;
+	    }
+	    
+	    /////////////////////////////////////
+	    //       center of the map
+	    /////////////////////////////////////
+	     else if( !strcmp(str,"center_map") || !strcmp(str,"CENTER_MAP")  )
+	    {  
+		  fscanf(f,"%lf %lf",&FLT);		  
+		  sys_xyz->index_stm_map_center=FLT;
+	    }
+	    
+	    /////////////////////////////////////
+	    //       size of the map
+	    /////////////////////////////////////
+	     else if( !strcmp(str,"size_map") || !strcmp(str,"SIZE_MAP")  )
+	    {  
+		  fscanf(f,"%lf %lf",&FLT,&FLT2);		  
+		  sys_xyz->stm_size_map[0]=FLT;
+		  sys_xyz->stm_size_map[1]=FLT2;
+	    }
+	    
+	    /////////////////////////////////////
+	    //       resolution of the map
+	    /////////////////////////////////////
+	     else if( !strcmp(str,"resolution_map") || !strcmp(str,"RESOLUTION_MAP")  )
+	    {  
+		  fscanf(f,"%d %d",&INT,&INT2);		  
+		  sys_xyz->stm_resol_map[0]=INT;
+		  sys_xyz->stm_resol_map[1]=INT2;
+	    }
+	    
+	    
+	    /////////////////////////////////////
+	    //      bias voltage for the map
+	    /////////////////////////////////////
+	     else if( !strcmp(str,"stm_bias") || !strcmp(str,"STM_BIAS")  )
+	    {  
+		  fscanf(f,"%lf",&FLT);		  
+		  sys_xyz->stm_bias=FLT;
+	    }
+    
+///////////////////////////////////////////////////////////////////////////
+//			OUTPUT OPTION
+///////////////////////////////////////////////////////////////////////////
+
+	    ////////////////////////
+	    // export  TE
+	    ///////////////////////    
+	     else if( !strcmp(str,"export_te") || !strcmp(str,"EXPORT_TE")   )
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->export_TE,str_out);
+	    }
+	    
+	     ////////////////////////
+	    // export  current
+	    ///////////////////////    
+	     else if( !strcmp(str,"export_current") || !strcmp(str,"EXPORT_CURRENT")   )
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->export_current,str_out);
+	    }
+	    
+	    ////////////////////////
+	    // export  MO
+	    ///////////////////////    
+	     else if( !strcmp(str,"export_mo") || !strcmp(str,"EXPORT_MO")   )
+	    {  
+		  fscanf(f,"%s",str_out);		  
+		  strcpy(sys_xyz->export_MO,str_out);
+	    }
+	   
+////////////////////////////////////////////////////////////////////////////////
+// 				default case
+////////////////////////////////////////////////////////////////////////////////
+		   
+	  else
+	  {
+		printf(" ERROR: CORRUPTED MAIN INPUT FILE: %s is not a valid entry \n",str);
+		exit(1);
+	  }
+	    
+	}
+   }
+   
+   //close file
+   fclose(f);
+}

@@ -1,0 +1,459 @@
+#include "./defMacro.h"
+#include "./manag_input/read_input_file.h"
+#include "./manag_input/create_system.h"
+#include "./manag_output/print_file.h"
+#include "./manag_output/print_screen.h"
+#include "./manag_output/export_scilab.h"
+#include "./manag_output/export_gnuplot.h"
+#include "./manag_output/export_scilab.h"
+#include "./algebra_real/algebra.h"
+#include "./algebra_real/extract_hamiltonian.h"
+#include "./algebra_cplx/algebra_cplx.h"
+#include "./huckel/header.h"
+#include "./huckel/huckel.h"
+#include "./huckel/read_input_hkl.h"
+#include "./huckel/read_input_hkl_general.h"
+#include "./negf_te/negf_te.h"
+#include "./negf_te/current.h"
+#include "./negf_te/compute_response.h"
+#include "./negf_te/map_tool.h"
+#include "./manipMol/rotate_molecule.h"
+#include "./manipMol/computeMO.h"
+
+
+///////////////////////////////////////////////////////////
+////////					///////////
+////////	MAIN FUNCTION			///////////
+////////					///////////
+///////////////////////////////////////////////////////////
+
+int main(int argc, char *argv[])
+{
+  
+  ////////////////////////
+  //	DECLARATION	//
+  ////////////////////////
+  int i,j,k=0;
+  
+  int trash;
+  
+  // data of the computation
+  SYS_XYZ  sys;
+  
+  // JOBTYPE
+  int JUNCTION =0 , STM = 0;
+  int ONE_POINT=0 , MAP = 0;
+  int GENERAL = 0;
+  
+  // molecular Hamiltonian
+  double *H,*S,*Hmol,*Smol;
+  
+  // contact Hamiltonian
+  double X,Y;
+  
+  
+
+  
+  // molecule information
+  atom *MOL;
+  int nb_atom_mol = 0;
+  int nb_orb_mol = 0;
+  int *index_orb_mol;
+  int *index_atom_mol;
+   
+  // cluster information
+  atom *CLUSTER;
+  int nb_atom_cluster;
+  int nb_contact_with_mol;
+  int index_contact_with_mol[25];
+  
+  
+  // surface information
+  atom *SURFACE;
+  int nb_atom_surface;
+  int tr;
+  int ptr[25];
+  
+  // tip information
+  atom *TIP;
+  int nb_atom_tip;
+  int nb_contact_tip_with_mol;
+  int index_contact_tip_with_mol[25];
+  
+  // cluster/molecule/cluster information
+  atom *SYSTEM;
+  int nb_atom_tot;
+  int nb_orb = 0;
+  
+  // index of the electrode atoms in the total system
+  int *index_elec_1,*index_elec_2;
+  int nb_atom_elec1, nb_atom_elec2;
+  
+  // index of the electrode orbitals in the system
+  int *index_orb_elec_1, *index_orb_elec_2;
+  int nb_orb_elec_1 = 0;
+  int nb_orb_elec_2 = 0;
+ 
+  // out files
+  char  out_file_system[100]; 
+  strcpy(out_file_system,argv[2]);
+  strcat(out_file_system,"system.xyz");
+  
+  char om_file[100];
+  strcpy(om_file,argv[2]);
+  strcat(om_file,"om.dat");
+  
+  char file_te[100];
+  strcpy(file_te,argv[2]);
+  strcat(file_te,"TE.dat");
+  
+  char file_dos[100];
+  strcpy(file_dos,argv[2]);
+  strcat(file_dos,"DOS.dat");
+  
+  char file_IV[100];
+  strcpy(file_IV,argv[2]);
+  strcat(file_IV,"IV.dat");
+  
+  char file_dIdV[100];
+  strcpy(file_dIdV,argv[2]);
+  strcat(file_dIdV,"dIdV.dat");
+  
+  char file_map[100];
+  strcpy(file_map,argv[2]);
+  strcat(file_map,"map.dat");
+  
+  int export_scilab = 1;
+  char file_scilab[100];
+  strcpy(file_scilab,argv[2]);
+  strcat(file_scilab,"matrix.sci");
+  
+
+  double LDOS = 0.18;
+
+  ////////////////////////
+  // read main input    //
+  ////////////////////////
+  read_data(&sys,argv[1]);
+  print_header(sys);
+  
+  // shortcut for the jobtype
+  if(!strcmp(sys.jobtype,"junction"))
+  {
+    JUNCTION = 1;	
+    ONE_POINT = 1;	
+  }
+
+  if(!strcmp(sys.jobtype,"general"))
+  {
+    GENERAL = 1;
+    ONE_POINT = 1;
+  }
+    
+  
+  
+  // short cut for the one point or map
+  if(!strcmp(sys.jobtype,"stm_map"))
+  {  
+    MAP = 1;	
+    ONE_POINT = 0;  
+  }
+  
+  // if we only want to check
+  if(!strcmp(sys.job_option,"check_input"))
+  {
+    ONE_POINT = 0;
+    MAP = 0;
+  }
+  
+    
+  
+  
+  
+  
+  ////////////////////////////////////////////////////////////////////
+  //		IF WE WANT TO BUILD A JUNCTION
+  ////////////////////////////////////////////////////////////////////
+  if(JUNCTION)
+  {
+    
+      ////////////////////////
+      // determine size     //
+      //////////////////////// 
+      
+      // molecule
+      nb_atom_mol = read_size(sys.pos);
+    
+      // cluster
+      nb_atom_cluster = read_size(sys.cluster);
+    
+    
+      /////////////////////////////////////////////////
+      // memory allocation  for the different parts  //
+      /////////////////////////////////////////////////
+      MOL = calloc(nb_atom_mol,sizeof(atom));
+      CLUSTER = calloc(nb_atom_cluster,sizeof(atom));
+    
+      ////////////////////////
+      // read molecule     //
+      ////////////////////////
+      read_position_molecule(sys.pos, MOL, nb_atom_mol);
+      
+      ////////////////////////////////////////////////
+      // compute the				//
+      // molecular Hamiltonian			//
+      ////////////////////////////////////////////////      
+      nb_orb_mol = compute_nb_orb(MOL,nb_atom_mol,sys.orb_elec);
+      Hmol = calloc(nb_orb_mol*nb_orb_mol,sizeof(double));
+      Smol = calloc(nb_orb_mol*nb_orb_mol,sizeof(double));
+      compute_huckel_hamiltonian(Hmol, Smol, nb_orb_mol, nb_atom_mol, MOL,sys.orb_elec,sys.elec_struct,sys.use_overlap); 
+      
+      ////////////////////////
+      // read cluster       //
+      ////////////////////////      
+      read_cluster(sys.cluster, CLUSTER, nb_atom_cluster, index_contact_with_mol, &nb_contact_with_mol);
+      
+      
+      ////////////////////////////////////////////////	
+      //  memory allocation for the indices	    //
+      //////////////////////////////////////////////// 
+      nb_atom_tot = nb_atom_mol+2*nb_atom_cluster;
+      index_elec_1 = calloc(nb_atom_cluster,sizeof(int));
+      index_elec_2 = calloc(nb_atom_cluster,sizeof(int)); 
+      
+      ////////////////////////////////////////////////	
+      //  memory allocation for the system	    //
+      ////////////////////////////////////////////////       
+      SYSTEM = calloc(nb_atom_tot,sizeof(atom));
+
+  
+      ////////////////////////////////////////////////
+      //  		create the system
+      ////////////////////////////////////////////////
+      rotateMoleculetoZaxis(MOL, nb_atom_mol, sys.index_contact);
+      rotateMoleculetoZaxis(MOL, nb_atom_mol, sys.index_contact);
+      create_junction(SYSTEM,  nb_atom_tot, MOL, nb_atom_mol , CLUSTER, nb_atom_cluster, index_contact_with_mol, nb_contact_with_mol,
+		  sys.index_contact, index_elec_1, index_elec_2 );
+      printf(" == position of the system written in %s\n",out_file_system);
+  
+  
+      ////////////////////////////////////////////////
+      //  	nbr orbitals in the junction
+      ////////////////////////////////////////////////  
+      
+      // system
+      nb_orb = compute_nb_orb(SYSTEM,nb_atom_tot,sys.orb_elec);
+      H = calloc(nb_orb*nb_orb,sizeof(double));
+      S = calloc(nb_orb*nb_orb,sizeof(double));
+      
+      // electrode
+      nb_orb_elec_1 = compute_nb_orb(CLUSTER,nb_atom_cluster,sys.orb_elec);
+      nb_orb_elec_2 = nb_orb_elec_1;
+      index_orb_elec_1 = calloc(nb_orb_elec_1,sizeof(int));
+      index_orb_elec_2 = calloc(nb_orb_elec_2,sizeof(int));  
+      index_orb_mol = calloc(nb_orb_mol,sizeof(int));
+  
+  
+      ////////////////////////////////////////////////
+      // 	   	compute the response	    //
+      ////////////////////////////////////////////////
+      one_point(sys, H, S, Hmol, Smol, SYSTEM, nb_atom_tot, nb_orb, index_orb_mol,  nb_orb_mol, 
+	       index_orb_elec_1, nb_orb_elec_1, index_orb_elec_2, nb_orb_elec_2, LDOS,
+	       file_te, file_IV, file_dIdV, file_dos,sys.jobtype);
+
+      ////////////////////////////////////////////////
+      //  	FREE THE MEMORY
+      ////////////////////////////////////////////////        
+      free(CLUSTER);	free(SYSTEM);
+      free(Smol);	free(H);	free(S);
+      free(index_elec_1);	free(index_elec_2);
+      free(index_orb_elec_1 );	free(index_orb_elec_2);	free(index_orb_mol);
+  }
+  
+
+  ////////////////////////////////////////////////////////////////////
+  //		IF WE WANT TO BUILD A STM
+  ////////////////////////////////////////////////////////////////////
+  if(STM)
+  {
+    
+      ////////////////////////
+      // determine size      //
+      ////////////////////////
+      // molecule
+      nb_atom_mol = read_size(sys.pos);
+      
+       // stm
+      nb_atom_surface = read_size(sys.surface);
+      nb_atom_tip = read_size(sys.tip);
+    
+      /////////////////////////////////////////////////
+      // memory allocation  for the different parts  //
+      /////////////////////////////////////////////////
+      MOL = calloc(nb_atom_mol,sizeof(atom));
+      SURFACE = calloc(nb_atom_surface,sizeof(atom));
+      TIP = calloc(nb_atom_tip,sizeof(atom));
+ 
+      
+      ////////////////////////
+      // read molecule     //
+      ////////////////////////      
+      read_position_molecule(sys.pos, MOL, nb_atom_mol);
+      
+      
+      ////////////////////////////////////////////////
+      // compute the				//
+      // molecular Hamiltonian			//
+      ////////////////////////////////////////////////
+      nb_orb_mol = compute_nb_orb(MOL,nb_atom_mol,sys.orb_elec);
+      Hmol = calloc(nb_orb_mol*nb_orb_mol,sizeof(double));
+      Smol = calloc(nb_orb_mol*nb_orb_mol,sizeof(double));
+      compute_huckel_hamiltonian(Hmol, Smol, nb_orb_mol, nb_atom_mol, MOL,sys.orb_elec,sys.elec_struct,sys.use_overlap); 
+      
+      
+        ////////////////////////
+	// read surface/tip   //
+	////////////////////////
+       read_cluster(sys.surface, SURFACE, nb_atom_surface, ptr, &tr);
+       read_cluster(sys.tip, TIP, nb_atom_tip, index_contact_tip_with_mol,&nb_contact_tip_with_mol);
+       
+ 
+        ////////////////////////////////////////////////	
+	//  memory allocation for the indices		//
+	////////////////////////////////////////////////
+       nb_atom_tot = nb_atom_mol+nb_atom_surface+nb_atom_tip;
+       index_elec_1 = calloc(nb_atom_surface,sizeof(int));
+       index_elec_2 = calloc(nb_atom_tip,sizeof(int));
+       
+       
+	////////////////////////////////////////////////	
+	//  memory allocation for the total system	//
+	////////////////////////////////////////////////
+	SYSTEM = calloc(nb_atom_tot,sizeof(atom));
+	
+	////////////////////////////////////////////////
+	//  		create the system
+	////////////////////////////////////////////////
+        //      rotateMoleculetoXaxis(MOL, nb_atom_mol, sys.mol_x_axis);
+        //      rotateMoleculetoYaxis(MOL, nb_atom_mol, sys.mol_y_axis);
+        create_stm(SYSTEM, nb_atom_tot, MOL, nb_atom_mol, SURFACE, nb_atom_surface,
+		   TIP, nb_atom_tip, sys.tip_pos, sys.nb_tip_pos, sys.dist_mol_surf, sys.dist_mol_tip,
+		   index_elec_1, index_elec_2 );
+        write_system(SYSTEM,nb_atom_tot,out_file_system);
+        if(VERBOSE)
+	   printf(" == position of the system written in %s\n",out_file_system);
+	
+	
+	////////////////////////////////
+	// number of orbitals	STM      //
+	/////////////////////////////////
+	   
+	// system
+	nb_orb = compute_nb_orb(SYSTEM,nb_atom_tot,sys.orb_elec);
+	H = calloc(nb_orb*nb_orb,sizeof(double));
+	S = calloc(nb_orb*nb_orb,sizeof(double));
+    
+	nb_orb_elec_1 = compute_nb_orb(SURFACE,nb_atom_surface,sys.orb_elec);
+	nb_orb_elec_2 = compute_nb_orb(TIP,nb_atom_tip,sys.orb_elec);
+	index_orb_elec_1 = calloc(nb_orb_elec_1,sizeof(int));
+	index_orb_elec_2 = calloc(nb_orb_elec_2,sizeof(int));  
+	index_orb_mol = calloc(nb_orb_mol,sizeof(int));
+    
+	if(VERBOSE)
+	  printf("\n == molecule \t: %d atoms %d orbitals \n == surface \t: %d atoms %d orbitals \n == tip \t: %d atoms %d orbitals \n\n",nb_atom_mol,nb_orb_mol,nb_atom_surface,nb_orb_elec_1,nb_atom_tip,nb_orb_elec_2);
+	
+	////////////////////////////////////////////////
+	// 	   	compute the response		//
+	////////////////////////////////////////////////
+	if(ONE_POINT)
+	  one_point(sys, H, S, Hmol, Smol, SYSTEM, nb_atom_tot, nb_orb, index_orb_mol,  nb_orb_mol, 
+	       index_orb_elec_1, nb_orb_elec_1, index_orb_elec_2, nb_orb_elec_2, LDOS,
+	       file_te, file_IV, file_dIdV, file_dos,sys.jobtype);
+
+  
+	if(MAP)
+	  map(sys, H, S, Hmol, Smol, 
+	      SYSTEM, nb_atom_tot, nb_atom_mol, nb_atom_surface, nb_atom_tip,
+	      nb_orb, index_orb_mol,   nb_orb_mol, index_orb_elec_1,  nb_orb_elec_1, index_orb_elec_2, nb_orb_elec_2, 
+	      index_elec_2, LDOS, file_map );
+	  
+	  
+	////////////////////////////////////////////////
+	//  	FREE THE MEMORY
+	////////////////////////////////////////////////        
+	free(SURFACE);	free(SYSTEM);	free(TIP);
+	free(Smol);	free(H);	free(S);
+	free(index_elec_1);		free(index_elec_2);
+	free(index_orb_elec_1 );	free(index_orb_elec_2);	free(index_orb_mol);
+  }
+  
+  
+   ////////////////////////////////////////////////////////////////////
+   //		IF WE DIRECTLY READ THE INPUT
+   ////////////////////////////////////////////////////////////////////
+   if(GENERAL)
+   {
+     
+     // compute the total Hamiltonian
+     compute_huckel_hamiltonian_general(&H, &S, &nb_orb, &nb_atom_tot, &SYSTEM,
+				&index_atom_mol, &nb_atom_mol, &index_elec_1, &nb_atom_elec1,
+				&index_orb_mol, &nb_orb_mol,&index_orb_elec_1,&nb_orb_elec_1,&index_orb_elec_2, &nb_orb_elec_2,
+				sys.pos, argv[2], sys.orb_elec,sys.use_overlap);
+
+     // write the system in xyz format
+     write_system(SYSTEM,nb_atom_tot,out_file_system);
+     if(VERBOSE)
+	   printf(" == position of the system written in %s\n",out_file_system);
+     
+     // extract the Hamiltonian of the molecule
+     Hmol = calloc(nb_orb_mol*nb_orb_mol,sizeof(double));
+     extract(Hmol, H, index_orb_mol,nb_orb_mol, index_orb_mol,nb_orb_mol, nb_orb);
+     
+     // extract the overlap matrix of the molecule
+     Smol = calloc(nb_orb_mol*nb_orb_mol,sizeof(double));
+     extract(Smol, S, index_orb_mol,nb_orb_mol, index_orb_mol,nb_orb_mol, nb_orb);
+     
+     
+     // extract the molecule information
+     MOL = calloc(nb_atom_mol,sizeof(atom));
+     extract_atom_mol(MOL,index_atom_mol,nb_atom_mol,SYSTEM);
+     
+     
+    // compute the response		
+     if(ONE_POINT)
+        one_point(sys, H, S, Hmol, Smol, SYSTEM, nb_atom_tot, nb_orb, index_orb_mol,  nb_orb_mol, 
+	       index_orb_elec_1, nb_orb_elec_1, index_orb_elec_2, nb_orb_elec_2, LDOS,
+	       file_te, file_IV, file_dIdV, file_dos,sys.jobtype);
+   }
+  
+    
+   ////////////////////////////////////////////////
+  // 	   	compute the MO			//
+  ///////////////////////////////////////////////   
+  if(!strcmp(sys.export_MO,"yes") || !strcmp(sys.export_MO,"YES") )
+  {
+    computeMO(Hmol, Smol, MOL, nb_atom_mol, nb_orb_mol, sys.orb_elec,om_file);
+    printf(" == Molecular Orbitals written in         : %s\n",om_file);    
+  }
+  
+  
+  
+
+  ///////////////////////////////////
+  //	free memory
+  ///////////////////////////////////  
+  free(Hmol);
+  free(MOL);
+ 
+   ////////////////////////////////////////////////
+  // 	   	Say Good bye			//
+  /////////////////////////////////////////////// 
+  printf("\n====  ===============================  ====\n");
+  printf("====  Thanks for using Husky.1 	       ====\n");
+  printf("====                    see you later  ====\n");
+  printf("====  ===============================  ====\n");
+
+  return(0);
+}
+ 
+ 

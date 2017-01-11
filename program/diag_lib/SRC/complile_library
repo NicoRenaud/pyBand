@@ -1,0 +1,1 @@
+gcc -dynamiclib -lm -lgslcblas -llapack -lgsl -o spec.dylib spec.c 

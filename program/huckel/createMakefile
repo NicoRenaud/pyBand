@@ -1,0 +1,60 @@
+#!/bin/bash
+
+MYDIR=$PWD
+FILE_NAME=Makefile
+EXEC_FILE=huckel
+
+if [ $FILE_NAME ]; then
+rm $FILE_NAME
+fi
+
+touch $MYDIR/$FILE_NAME
+echo '# ==== ====================================== ====' >> $MYDIR/$FILE_NAME
+echo '# ==== 	        HUCKEL  Makefile 	      ====' >> $MYDIR/$FILE_NAME
+echo '# ==== ====================================== ====' >> $MYDIR/$FILE_NAME
+
+echo '# Automatically generated the ' $(date +%d-%m-20%g) 'at' $(date +%Hh%M) >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+echo 'CC   = gcc' >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+echo -n 'OBJ = ' >> $MYDIR/$FILE_NAME
+
+for f in $(find . -name "*.c"); do
+filename=$(basename $f)
+filename=${filename%.*}
+echo -n 'OBJ/'$filename'.o ' >> $MYDIR/$FILE_NAME
+done
+
+echo '' >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+echo 'LIBS = -lm -lgslcblas -llapack -lgsl' >> $MYDIR/$FILE_NAME
+echo 'BIN  = ' $EXEC_FILE   >> $MYDIR/$FILE_NAME
+echo 'CFLAGS = -Wall'  >> $MYDIR/$FILE_NAME
+echo 'RM = rm -f'  >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+
+echo '.PHONY: all all-before all-after clean clean-custom'  >> $MYDIR/$FILE_NAME
+
+echo 'all: all-before $(BIN) all-after'  >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+
+echo 'clean: clean-custom'  >> $MYDIR/$FILE_NAME
+echo '		${RM} $(OBJ) $(BIN)'  >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+
+echo '$(BIN): $(OBJ)'  >> $MYDIR/$FILE_NAME
+echo -e '\t$(CC) $(OBJ) -o $(BIN) $(LIBS)'  >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+
+for f in $(find . -name "*.c"); do
+filename=$(basename $f)
+filename=${filename%.*}
+echo 'OBJ/'$filename'.o : '$f >> $MYDIR/$FILE_NAME
+echo -e '\t$(CC) -c '$f '-o OBJ/'$filename.o' $(CFLAGS)' >> $MYDIR/$FILE_NAME
+echo '' >> $MYDIR/$FILE_NAME
+done
+
+
+
+

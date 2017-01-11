@@ -1,0 +1,139 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <tgmath.h>
+#include <time.h>
+#include <cblas.h>
+
+#ifndef _defMacro_H
+
+#define _defMacro_H
+#define KB 8.67 * pow(10,-5) 
+#define CAHRGE 1.602176468 * pow(10,-19)
+#define HBAR 1.05 * pow(10,-34)
+#define FS2UA 1.5192678
+#define PI 3.14116457148 
+#define DBG 1
+#define AFF_SCREEN 1
+#define NEGF_VERBOSE 0
+#define DIST_FIRST_NEIGHBOR 1.5
+#define MAX_CLUSTER 10
+#define VERBOSE 1
+
+
+// distance between S and Au
+#define distSAu 2.25
+
+// coupling between between S and Au
+#define CPLG_SAU   -5.5	// s orbitals
+#define CPLG_SAU_s -14.3
+#define CPLG_SAU_p -6.3	// p orbitals
+
+// coupling between Au and Au
+#define CPLG_AUAU -6  // s orbitals
+#define CPLG_AUAU_s -10.7  // s orbitals
+#define CPLG_AUAU_p -4.25  // p orbitals
+#define CPLG_AUAU_d -2.5  // d orbitals
+
+
+///////////////////////////////////////
+// 	 STRUCTURES : SYSTEM
+///////////////////////////////////////
+
+
+typedef struct{
+  
+  // type of conformations
+  char jobtype[25];
+  char job_option[25];
+  
+  
+  // position of the atoms
+  char pos[100];
+  
+  // metho to compute hamiltonian
+  char elec_struct[100];
+  
+  // use or not the overlap
+  char use_overlap[10];
+  
+  // nb atome
+  int index_contact[2]; 
+  double cplg_contact[2]; // obsolete ?
+  char orb_contact[100];
+  
+  // size of the final cluster
+  char cluster[100];
+  char orb_elec[100];
+  
+  // surface
+  char surface[100];
+  double dist_mol_surf;
+  
+  // surface
+  char tip[100];
+  double dist_mol_tip;
+  int tip_pos[50];
+  int nb_tip_pos;
+  
+  // xaxis of the molecule
+  int mol_x_axis[2];
+  
+  // y axis of the molecule
+  int mol_y_axis[2];
+  
+  // stm mode height/current
+  char stm_mode[50];
+  double stm_const;
+  double stm_size_map[2];
+  int stm_resol_map[2];  
+  double stm_bias;
+  int index_stm_map_center;
+  
+  // methods used to compute the TE
+  char method[100];
+  
+  // energy range to comoute the T(E)
+  double min_nrj;
+  double max_nrj;
+  int nb_nrj;
+  
+  // parameter to compute I(V)
+  double Ef;
+  double temp;
+  
+  // output options
+  char export_TE[5];
+  char export_MO[5];
+  char export_current[5];
+  
+} SYS_XYZ;
+
+
+
+  
+
+
+
+///////////////////////////////////////
+//
+//    Proto des fonctions Lapack
+//
+///////////////////////////////////////
+
+extern void ssyev_( char *jobz, char *uplo, int *n, float *a, int *lda,
+        float *w, float *work, int *lwork, int *info );
+
+extern int dsyev_(char *jobz, char *uplo, int *n, double *a,  int *lda, 
+	double *w, double *work, int *lwork, int *info);
+
+extern void cgeev_( char* jobvl, char* jobvr, int* n, complex float* a,
+                int* lda, complex float* w, complex float* vl, int* ldvl, complex float* vr, int* ldvr,
+                complex float* work, int* lwork, float* rwork, int* info );
+
+extern int dggev_(char *jobvl, char *jobvr, integer *n, double *
+	a, int *lda, double *b, int *ldb, double *alphar, 
+	double*alphai, double *beta, double *vl, int *ldvl, 
+	double *vr, int *ldvr, double *work, int *lwork, 
+	int *info);
+#endif
