@@ -1,5 +1,0 @@
-#!/bin/bash
-
-
-EXE=/Users/nicolasrenaud/Documents/CODE/myCodes/pyBand.2/program/band_structure.py
-python $EXE sp.in parameters
