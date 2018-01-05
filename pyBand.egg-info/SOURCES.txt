@@ -1,9 +1,0 @@
-README.md
-pyBand/BandStructure.py
-pyBand/ElectronicSystem.py
-pyBand/hkl_module.py
-pyBand.egg-info/PKG-INFO
-pyBand.egg-info/SOURCES.txt
-pyBand.egg-info/dependency_links.txt
-pyBand.egg-info/requires.txt
-pyBand.egg-info/top_level.txt

@@ -1,0 +1,6 @@
+Byte-compiled / optimized 
+*__pycache__*
+*.pyc
+*.dat
+*.png
+!example/*.png
